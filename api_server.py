@@ -1,4 +1,16 @@
 import os
+
+# Set environment variables for RTX 3090 (24GB VRAM) and system paths
+os.environ["RANK"] = "0"
+os.environ["WORLD_SIZE"] = "1"
+os.environ["MASTER_ADDR"] = "localhost"
+os.environ["MASTER_PORT"] = "29500"
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+os.environ["PYTHONPATH"] = os.environ.get("PYTHONPATH", "") + ":" + os.path.abspath(os.path.dirname(__file__))
+os.environ["PATH"] = "/usr/local/cuda-12.8/bin:" + os.environ.get("PATH", "")
+os.environ["LD_LIBRARY_PATH"] = "/usr/local/cuda-12.8/lib64:" + os.environ.get("LD_LIBRARY_PATH", "")
+os.environ["CUDA_HOME"] = "/usr/local/cuda-12.8"
+
 import torch
 import uuid
 import argparse
@@ -255,17 +267,19 @@ def main():
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--dtype", type=str, default="bf16")
     parser.add_argument("--offloading", action="store_true", default=True)
+    parser.add_argument("--use_sageattn", action="store_true", default=True)
+    parser.add_argument("--use_vae_parallel", action="store_true", default=True)
     args, unknown = parser.parse_known_args()
 
     # Create dummy args for initialize_infer_state compatibility
     class DummyArgs:
-        use_sageattn = False
-        sage_blocks_range = ""
+        use_sageattn = args.use_sageattn
+        sage_blocks_range = "0-53"
         enable_torch_compile = False
         use_fp8_gemm = False
         quant_type = "fp8-per-block"
         include_patterns = "double_blocks"
-        use_vae_parallel = False
+        use_vae_parallel = args.use_vae_parallel
     
     initialize_infer_state(DummyArgs())
 
