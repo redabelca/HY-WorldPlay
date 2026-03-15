@@ -25,3 +25,6 @@ pandas
 scipy
 protobuf
 moviepy==1.0.3
+fastapi
+uvicorn
+python-multipart

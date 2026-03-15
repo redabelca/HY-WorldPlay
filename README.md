@@ -63,6 +63,7 @@ https://github.com/user-attachments/assets/9fd12b40-41ab-4201-8667-8b333db1123d
   - [3. Install AngelSlim and DeepGEMM](#3-install-angelslim-and-deepgemm)
   - [4. Download All Required Models](#4-download-all-required-models)
 - [🎮 Quick Start](#-quick-start)
+- [📡 Interactive Streaming API](#-interactive-streaming-api)
 - [🧱 Model Checkpoints](#-model-checkpoints)
 - [🔑 Inference](#-inference)
   - [Configure Model Paths](#configure-model-paths)
@@ -198,6 +199,43 @@ https://github.com/user-attachments/assets/643a33a4-b677-4eff-ad1d-32205c594274
 
 
 Try our **online demo** without installation: https://3d.hunyuan.tencent.com/sceneTo3D
+
+## 📡 Interactive Streaming API
+
+We provide a FastAPI-based streaming server that allows for real-time, stateful world exploration. Unlike the standard inference script, the API maintains the model state in memory, allowing you to generate new video chunks instantly based on interactive inputs.
+
+### 1. Setup
+Install the additional web dependencies:
+```bash
+pip install fastapi uvicorn python-multipart
+```
+
+### 2. Run the Server
+Start the server by pointing to your model checkpoints. For an RTX 3090, we recommend enabling offloading and FP8:
+
+```bash
+python api_server.py \
+  --model_path /path/to/HunyuanVideo \
+  --action_ckpt /path/to/ar_distilled_action_model/diffusion_pytorch_model.safetensors \
+  --use_fp8_gemm true \
+  --offloading
+```
+
+### 3. Basic Usage
+*   **Initialize & Generate First Video:**
+    ```bash
+    curl -X POST http://localhost:8000/start \
+      -F "prompt=A futuristic city" \
+      -F "image=@your_image.png"
+    ```
+*   **Generate Next Chunk (Step):**
+    ```bash
+    curl -X POST http://localhost:8000/step \
+      -H "Content-Type: application/json" \
+      -d '{"session_id": "YOUR_ID", "pose_string": "w-8", "num_chunks": 2}'
+    ```
+
+For full details on checkpoints, resumability, and performance optimization, see the [**Streaming API Guide**](docs/streaming_api_guide.md).
 
 ## 🧱 Model Checkpoints
 
