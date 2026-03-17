@@ -39,9 +39,9 @@ def download_hy_worldplay():
     print("[1/6] Downloading tencent/HY-WorldPlay (AR models only)...")
     print("=" * 60)
 
-    # We ignore the bidirectional_model to save space as it's not needed for standard I2V
+    # We ignore the bidirectional_model and wan models to save space
     worldplay_path = snapshot_download(
-        "tencent/HY-WorldPlay", ignore_patterns=["bidirectional_model/*"]
+        "tencent/HY-WorldPlay", ignore_patterns=["bidirectional_model/*", "wan_*"]
     )
     print(f"Downloaded to: {worldplay_path}")
 
