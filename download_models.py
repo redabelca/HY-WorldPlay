@@ -57,9 +57,9 @@ def download_hy_worldplay():
 
     if os.path.exists(model_src) and not os.path.exists(model_dst):
         real_src = os.path.realpath(model_src)
-        shutil.copy2(real_src, model_dst)
+        shutil.move(real_src, model_dst)
         print(
-            "Fixed: Renamed model.safetensors -> diffusion_pytorch_model.safetensors in ar_distilled_action_model"
+            "Fixed: Renamed and moved model.safetensors -> diffusion_pytorch_model.safetensors in ar_distilled_action_model"
         )
 
     return worldplay_path
@@ -131,17 +131,19 @@ def download_llm_text_encoder(hunyuan_path):
     print("Downloading Qwen/Qwen2.5-VL-7B-Instruct (~15GB)...")
     qwen_cache = snapshot_download("Qwen/Qwen2.5-VL-7B-Instruct")
 
-    # Copy files (resolve symlinks)
+    # Move files (resolve symlinks)
     os.makedirs(llm_target, exist_ok=True)
     for item in os.listdir(qwen_cache):
         src = os.path.realpath(os.path.join(qwen_cache, item))
         dst = os.path.join(llm_target, item)
-        if os.path.isdir(src):
-            shutil.copytree(src, dst, dirs_exist_ok=True)
-        else:
-            shutil.copy2(src, dst)
+        if os.path.exists(dst):
+            if os.path.isdir(dst):
+                shutil.rmtree(dst)
+            else:
+                os.remove(dst)
+        shutil.move(src, dst)
 
-    print(f"Copied to: {llm_target}")
+    print(f"Moved to: {llm_target}")
 
 
 def download_byt5_encoders(hunyuan_path):
@@ -177,11 +179,13 @@ def download_byt5_encoders(hunyuan_path):
         for item in os.listdir(byt5_cache):
             src = os.path.realpath(os.path.join(byt5_cache, item))
             dst = os.path.join(byt5_target, item)
-            if os.path.isdir(src):
-                shutil.copytree(src, dst, dirs_exist_ok=True)
-            else:
-                shutil.copy2(src, dst)
-        print(f"Copied to: {byt5_target}")
+            if os.path.exists(dst):
+                if os.path.isdir(dst):
+                    shutil.rmtree(dst)
+                else:
+                    os.remove(dst)
+            shutil.move(src, dst)
+        print(f"Moved to: {byt5_target}")
 
     # 2. Download Glyph-SDXL-v2 from ModelScope
     glyph_target = os.path.join(text_encoder_base, "Glyph-SDXL-v2")
@@ -202,13 +206,13 @@ def download_byt5_encoders(hunyuan_path):
         for item in os.listdir(glyph_cache):
             src = os.path.join(glyph_cache, item)
             dst = os.path.join(glyph_target, item)
-            if os.path.isdir(src):
-                if os.path.exists(dst):
+            if os.path.exists(dst):
+                if os.path.isdir(dst):
                     shutil.rmtree(dst)
-                shutil.copytree(src, dst)
-            else:
-                shutil.copy2(src, dst)
-        print(f"Copied to: {glyph_target}")
+                else:
+                    os.remove(dst)
+            shutil.move(src, dst)
+        print(f"Moved to: {glyph_target}")
 
 
 def download_vision_encoder(hunyuan_path, hf_token):
@@ -253,16 +257,18 @@ def download_vision_encoder(hunyuan_path, hf_token):
             "black-forest-labs/FLUX.1-Redux-dev", token=hf_token
         )
 
-        # Copy files (resolve symlinks)
+        # Move files (resolve symlinks)
         os.makedirs(siglip_target, exist_ok=True)
         for item in os.listdir(flux_cache):
             src = os.path.realpath(os.path.join(flux_cache, item))
             dst = os.path.join(siglip_target, item)
-            if os.path.isdir(src):
-                shutil.copytree(src, dst, dirs_exist_ok=True)
-            else:
-                shutil.copy2(src, dst)
-        print(f"Copied to: {siglip_target}")
+            if os.path.exists(dst):
+                if os.path.isdir(dst):
+                    shutil.rmtree(dst)
+                else:
+                    os.remove(dst)
+            shutil.move(src, dst)
+        print(f"Moved to: {siglip_target}")
     except Exception as e:
         print(f"ERROR: Failed to download vision encoder: {e}")
         print(
