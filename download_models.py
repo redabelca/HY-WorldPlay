@@ -41,7 +41,11 @@ def download_hy_worldplay():
 
     # We ignore the bidirectional_model and wan models to save space
     worldplay_path = snapshot_download(
-        "tencent/HY-WorldPlay", ignore_patterns=["bidirectional_model/*", "wan_*"]
+        "tencent/HY-WorldPlay", ignore_patterns=[
+            "bidirectional_model/*",
+            "wan_*",
+            "ar_rl_*"
+        ]
     )
     print(f"Downloaded to: {worldplay_path}")
 
@@ -89,8 +93,8 @@ def download_hunyuan_video():
             "scheduler/*",
             "transformer/480p_i2v/*",
             "transformer/480p_i2v_step_distilled/*",
-            "transformer/720p_sr_distilled/*",
-            "transformer/1080p_sr_distilled/*",
+            # "transformer/720p_sr_distilled/*",
+            # "transformer/1080p_sr_distilled/*",
         ],
     )
     print(f"Downloaded to: {hunyuan_path}")
