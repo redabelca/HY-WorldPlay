@@ -36,10 +36,13 @@ def download_hy_worldplay():
     from huggingface_hub import snapshot_download
 
     print("\n" + "=" * 60)
-    print("[1/6] Downloading tencent/HY-WorldPlay...")
+    print("[1/6] Downloading tencent/HY-WorldPlay (AR models only)...")
     print("=" * 60)
 
-    worldplay_path = snapshot_download("tencent/HY-WorldPlay")
+    # We ignore the bidirectional_model to save space as it's not needed for standard I2V
+    worldplay_path = snapshot_download(
+        "tencent/HY-WorldPlay", ignore_patterns=["bidirectional_model/*"]
+    )
     print(f"Downloaded to: {worldplay_path}")
 
     # Fix: Rename model.safetensors to diffusion_pytorch_model.safetensors
@@ -66,9 +69,29 @@ def download_hunyuan_video():
     print("[2/6] Downloading tencent/HunyuanVideo-1.5 (vae, scheduler, transformer)...")
     print("=" * 60)
 
+    # Available transformer variants (uncomment to download):
+    # "transformer/1080p_sr_distilled/*",
+    # "transformer/480p_i2v/*",                  # Included by default
+    # "transformer/480p_i2v_distilled/*",
+    # "transformer/480p_i2v_step_distilled/*",   # Included by default
+    # "transformer/480p_t2v/*",
+    # "transformer/480p_t2v_distilled/*",
+    # "transformer/720p_i2v/*",
+    # "transformer/720p_i2v_distilled/*",
+    # "transformer/720p_i2v_distilled_sparse/*",
+    # "transformer/720p_sr_distilled/*",
+    # "transformer/720p_t2v/*",
+
     hunyuan_path = snapshot_download(
         "tencent/HunyuanVideo-1.5",
-        allow_patterns=["vae/*", "scheduler/*", "transformer/480p_i2v/*"],
+        allow_patterns=[
+            "vae/*",
+            "scheduler/*",
+            "transformer/480p_i2v/*",
+            "transformer/480p_i2v_step_distilled/*",
+            "transformer/720p_sr_distilled/*",
+            "transformer/1080p_sr_distilled/*",
+        ],
     )
     print(f"Downloaded to: {hunyuan_path}")
     return hunyuan_path
