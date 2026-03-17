@@ -761,6 +761,7 @@ def generate_video(args):
         Ks=Ks.unsqueeze(0),
         action=action.unsqueeze(0),
         few_step=args.few_step,
+        flow_shift=args.flow_shift, # MODE PROFILE: Use the shift from our profile defaults or manual override
         chunk_latent_frames=4 if args.model_type == "ar" else 16,
         model_type=args.model_type,
         user_height=args.height,
@@ -998,8 +999,8 @@ def main():
         type=str_to_bool,
         nargs="?",
         const=True,
-        default=False,
-        help="Enable sageattn (default: false). "
+        default=True,
+        help="Enable sageattn (default: true). "
         "Use --use_sageattn or --use_sageattn true/1 to enable, "
         "--use_sageattn false/0 to disable",
     )
@@ -1043,7 +1044,86 @@ def main():
         help="Include patterns for fp8 gemm (default: double_blocks)",
     )
 
+    # MODE PROFILE: Added to support quick switching between 'fast' (distilled) and 'quality' (standard) modes.
+    parser.add_argument(
+        "--mode",
+        type=str,
+        default=None,
+        choices=["fast", "quality"],
+        help="Profile mode: 'fast' for distilled/fast inference, 'quality' for standard/high-quality inference. "
+        "Setting this will automatically configure smart defaults for steps, flow_shift, and paths.",
+    )
+
+    # Added to allow manual control of flow_shift, which is often tied to the specific model version.
+    parser.add_argument(
+        "--flow_shift",
+        type=float,
+        default=None,
+        help="Flow shift value for the scheduler (default: None, will be set by --mode or pipeline defaults)",
+    )
+
     args = parser.parse_args()
+
+    # --- MODE PROFILE LOGIC ---
+    # This block automatically sets smart defaults based on the chosen --mode.
+    # IMPORTANT: Manual command-line arguments (explicitly passed) will ALWAYS override these defaults.
+    if args.mode:
+        import sys
+        # Helper to check if an argument was explicitly passed in the command line
+        def is_explicit(dest):
+            # Map common dest names back to their flag names
+            flag_map = {
+                'num_inference_steps': '--num_inference_steps',
+                'flow_shift': '--flow_shift',
+                'few_step': '--few_step',
+                'use_sageattn': '--use_sageattn',
+                'video_length': '--video_length'
+            }
+            flag = flag_map.get(dest)
+            return flag in sys.argv if flag else False
+
+        if args.mode == "fast":
+            print(f"INFO: Applying 'fast' profile (Distilled Mode)")
+            # 1. Sampling Defaults for Fast Mode
+            if not is_explicit('num_inference_steps'): args.num_inference_steps = 8
+            if not is_explicit('flow_shift'): args.flow_shift = 5.0
+            if not is_explicit('few_step'): args.few_step = True
+            
+            # 2. Smart Path Logic for Fast Mode
+            # If the base model_path is provided but doesn't point to a specific version, auto-append the distilled path.
+            if "transformer" in args.model_path and not args.model_path.endswith("step_distilled"):
+                 potential_path = os.path.join(args.model_path, "480p_i2v_step_distilled")
+                 if os.path.exists(potential_path):
+                     args.model_path = potential_path
+            
+            # If action_ckpt points to the base directory, point to the distilled file.
+            if os.path.isdir(args.action_ckpt):
+                potential_ckpt = os.path.join(args.action_ckpt, "ar_distilled_action_model", "diffusion_pytorch_model.safetensors")
+                if os.path.exists(potential_ckpt):
+                    args.action_ckpt = potential_ckpt
+
+        elif args.mode == "quality":
+            print(f"INFO: Applying 'quality' profile (Standard Mode)")
+            # 1. Sampling Defaults for Quality Mode
+            if not is_explicit('num_inference_steps'): args.num_inference_steps = 30
+            if not is_explicit('flow_shift'): args.flow_shift = 7.0
+            if not is_explicit('few_step'): args.few_step = False
+
+            # 2. Smart Path Logic for Quality Mode
+            if "transformer" in args.model_path and "step_distilled" not in args.model_path and not args.model_path.endswith("480p_i2v"):
+                 potential_path = os.path.join(args.model_path, "480p_i2v")
+                 if os.path.exists(potential_path):
+                     args.model_path = potential_path
+            
+            if os.path.isdir(args.action_ckpt):
+                potential_ckpt = os.path.join(args.action_ckpt, "ar_model", "diffusion_pytorch_model.safetensors")
+                if os.path.exists(potential_ckpt):
+                    args.action_ckpt = potential_ckpt
+
+        print(f"INFO: Final Configuration -> Steps: {args.num_inference_steps}, Flow Shift: {args.flow_shift}, Few Step: {args.few_step}")
+        print(f"INFO: Using Model Path: {args.model_path}")
+        print(f"INFO: Using Action Checkpoint: {args.action_ckpt}")
+    # --- END MODE PROFILE LOGIC ---
 
     assert args.image_path is not None
 
